@@ -121,18 +121,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   return (
                     <React.Fragment>
                       <Link
-                        href="#"
+                        href="/"
                         className={`group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
                           (pathname === "/" ||
                             pathname.includes("dashboard")) &&
                           "bg-graydark dark:bg-meta-4"
                         }`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          sidebarExpanded
-                            ? handleClick()
-                            : setSidebarExpanded(true);
-                        }}
                       >
                         <svg
                           className="fill-current"
@@ -160,25 +154,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                           />
                         </svg>
                         Dashboard
-                        <svg
-                          className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                            open && "rotate-180"
-                          }`}
-                          width="20"
-                          height="20"
-                          viewBox="0 0 20 20"
-                          fill="none"
-                          xmlns="http://www.w3.org/2000/svg"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            clipRule="evenodd"
-                            d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
-                            fill=""
-                          />
-                        </svg>
                       </Link>
-                      {/* <!-- Dropdown Menu Start --> */}
                       <div
                         className={`translate transform overflow-hidden ${
                           !open && "hidden"
@@ -192,17 +168,45 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                                 pathname === "/" && "text-white"
                               }`}
                             >
-                              eCommerce
+                              Overview
                             </Link>
                           </li>
                         </ul>
                       </div>
-                      {/* <!-- Dropdown Menu End --> */}
                     </React.Fragment>
                   );
                 }}
               </SidebarLinkGroup>
-              {/* <!-- Menu Item Dashboard --> */}
+
+              {/* <!-- Menu Item Leads --> */}
+              <li>
+                <Link
+                  href="/leads"
+                  className={`group relative flex items-center gap-2.5 rounded-sm px-4 py-2 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                    pathname.includes("leads") && "bg-graydark dark:bg-meta-4"
+                  }`}
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 18 18"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.0002 1.7719C5.02845 1.7719 1.77197 5.02835 1.77197 9.0001C1.77197 12.9718 5.02845 16.2283 9.0002 16.2283C12.9719 16.2283 16.2284 12.9718 16.2284 9.0001C16.2284 5.02835 12.9719 1.7719 9.0002 1.7719ZM9.0002 14.9533C6.3252 14.9533 4.05345 12.7096 4.05345 10.0346C4.05345 7.3596 6.3252 5.11585 9.0002 5.11585C11.6752 5.11585 13.9469 7.3596 13.9469 10.0346C13.9469 12.7096 11.6752 14.9533 9.0002 14.9533Z"
+                      fill=""
+                    />
+                    <path
+                      d="M9.0002 7.25623C7.66207 7.25623 6.6002 8.3181 6.6002 9.65623C6.6002 10.9944 7.66207 12.0562 9.0002 12.0562C10.3383 12.0562 11.4002 10.9944 11.4002 9.65623C11.4002 8.3181 10.3383 7.25623 9.0002 7.25623Z"
+                      fill=""
+                    />
+                  </svg>
+                  Leads
+                </Link>
+              </li>
+              {/* <!-- Menu Item Leads --> */}
 
               {/* <!-- Menu Item Calendar --> */}
               <li>
