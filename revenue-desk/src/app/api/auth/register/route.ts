@@ -4,10 +4,10 @@ import bcrypt from "bcryptjs";
 import { z } from "zod";
 
 const registerSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  name: z.string().min(1),
-  workspaceName: z.string().min(1),
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters" }),
+  name: z.string().min(1, { message: "Name is required" }),
+  workspaceName: z.string().min(1, { message: "Business name is required" }),
 });
 
 export async function POST(req: Request) {
@@ -59,9 +59,16 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Registration error:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.issues[0].message },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: "Something went wrong: " + message },
+      { error: "Failed to create account. Please try again." },
       { status: 500 }
     );
   }
