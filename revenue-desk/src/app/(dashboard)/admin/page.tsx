@@ -35,7 +35,8 @@ export default function AdminPage() {
     }
 
     fetchUsers();
-  }, [session, status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, status, router]);
 
   const fetchUsers = async () => {
     try {
@@ -170,7 +171,7 @@ export default function AdminPage() {
               User
             </span>
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>Can manage own workspace's leads and customers</p>
+              <p>Can manage own workspace leads and customers</p>
             </div>
           </div>
           <div className="flex items-start gap-4">
