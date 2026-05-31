@@ -77,6 +77,7 @@ model Workspace {
   users     User[]
   leads     Lead[]
   customers Customer[]
+  jobs      Job[]
 
   @@map("workspaces")
 }
@@ -112,6 +113,43 @@ model Customer {
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  jobs        Job[]
 
   @@map("customers")
+}
+
+model Job {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  status        String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, PAID, DELIVERED, CANCELLED
+
+  // Vehicle info
+  vehicleMake   String?
+  vehicleModel  String?
+  vehicleYear   Int?
+  vehiclePlate  String?
+
+  // Pricing
+  labourCost    Float    @default(0)
+  partsCost     Float    @default(0)
+  totalCost     Float    @default(0)
+
+  // Dates
+  dateReceived  DateTime @default(now())
+  dateDue       DateTime?
+  dateCompleted DateTime?
+  dateDelivered DateTime?
+
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@map("jobs")
 }

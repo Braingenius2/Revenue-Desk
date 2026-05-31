@@ -11,11 +11,16 @@ export async function GET() {
 
     const workspaceId = session.user.workspaceId;
 
-    const [leadsCount, customersCount, newLeadsCount, wonLeadsCount] = await Promise.all([
+    const [
+      leadsCount, customersCount, newLeadsCount, wonLeadsCount,
+      activeJobsCount, pendingJobsCount,
+    ] = await Promise.all([
       prisma.lead.count({ where: { workspaceId } }),
       prisma.customer.count({ where: { workspaceId } }),
       prisma.lead.count({ where: { workspaceId, status: "NEW" } }),
       prisma.lead.count({ where: { workspaceId, status: "WON" } }),
+      prisma.job.count({ where: { workspaceId, status: { in: ["PENDING", "IN_PROGRESS"] } } }),
+      prisma.job.count({ where: { workspaceId, status: "PENDING" } }),
     ]);
 
     return NextResponse.json({
@@ -23,6 +28,8 @@ export async function GET() {
       customersCount,
       newLeadsCount,
       wonLeadsCount,
+      activeJobsCount,
+      pendingJobsCount,
     });
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

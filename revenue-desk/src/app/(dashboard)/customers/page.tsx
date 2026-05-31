@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import DefaultLayout from "@/components/Layouts/DefaultLayout";
 import Breadcrumb from "@/components/Breadcrumbs/Breadcrumb";
+import { formatNaira } from "@/lib/currency";
+import { formatDate } from "@/lib/utils";
+import { exportToCSV } from "@/lib/export";
 
 interface Customer {
   id: string;
@@ -23,6 +26,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -32,20 +36,15 @@ export default function CustomersPage() {
   });
 
   useEffect(() => {
-    if (session) {
-      fetchCustomers();
-    }
+    if (session) fetchCustomers();
   }, [session]);
 
   const fetchCustomers = async () => {
     try {
       const res = await fetch("/api/customers");
-      if (res.ok) {
-        const data = await res.json();
-        setCustomers(data);
-      }
-    } catch (error) {
-      console.error("Error fetching customers:", error);
+      if (res.ok) setCustomers(await res.json());
+    } catch (err) {
+      console.error("Error fetching customers:", err);
     } finally {
       setLoading(false);
     }
@@ -56,27 +55,19 @@ export default function CustomersPage() {
     try {
       const url = editingCustomer ? `/api/customers/${editingCustomer.id}` : "/api/customers";
       const method = editingCustomer ? "PUT" : "POST";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-
       if (res.ok) {
         fetchCustomers();
         setShowModal(false);
         setEditingCustomer(null);
-        setFormData({
-          name: "",
-          email: "",
-          phone: "",
-          address: "",
-          notes: "",
-        });
+        setFormData({ name: "", email: "", phone: "", address: "", notes: "" });
       }
-    } catch (error) {
-      console.error("Error saving customer:", error);
+    } catch (err) {
+      console.error("Error saving customer:", err);
     }
   };
 
@@ -93,165 +84,226 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this customer?")) return;
+    if (!confirm("Delete this customer?")) return;
     try {
       const res = await fetch(`/api/customers/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        fetchCustomers();
-      }
-    } catch (error) {
-      console.error("Error deleting customer:", error);
+      if (res.ok) fetchCustomers();
+    } catch (err) {
+      console.error("Error deleting customer:", err);
     }
   };
 
   const openNewModal = () => {
     setEditingCustomer(null);
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      address: "",
-      notes: "",
-    });
+    setFormData({ name: "", email: "", phone: "", address: "", notes: "" });
     setShowModal(true);
   };
+
+  const filtered = customers.filter(
+    (c) =>
+      !search ||
+      c.name.toLowerCase().includes(search.toLowerCase()) ||
+      (c.phone || "").includes(search) ||
+      (c.email || "").toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <DefaultLayout>
       <Breadcrumb pageName="Customers" />
 
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-        <div className="border-b border-stroke px-6.5 py-4 dark:border-strokedark">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-black dark:text-white">Customers</h3>
-            <button
-              onClick={openNewModal}
-              className="rounded bg-primary px-4 py-2 text-white hover:bg-opacity-90"
-            >
-              Add Customer
-            </button>
+        <div className="border-b border-stroke px-4 py-4 dark:border-strokedark md:px-6 md:py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <h3 className="text-lg font-medium text-black dark:text-white">
+              Customers
+            </h3>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <input
+                type="text"
+                placeholder="Search customers..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded border border-stroke bg-gray px-3 py-2 text-sm dark:border-strokedark dark:bg-meta-4 sm:w-48"
+              />
+              <button
+                onClick={() =>
+                  exportToCSV(
+                    filtered.map((c) => ({
+                      Name: c.name,
+                      Email: c.email || "",
+                      Phone: c.phone || "",
+                      Address: c.address || "",
+                      "Total Spent": formatNaira(c.totalSpent),
+                      Orders: c.totalOrders.toString(),
+                      Notes: c.notes || "",
+                    })),
+                    "customers-export",
+                  )
+                }
+                className="rounded bg-body px-3 py-2 text-sm text-white hover:bg-opacity-90"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={openNewModal}
+                className="rounded bg-primary px-4 py-2 text-sm text-white hover:bg-opacity-90"
+              >
+                + Add Customer
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-gray-2 dark:bg-meta-4">
-                <th className="px-4 py-3 text-left text-sm font-medium">Name</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Email</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Phone</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Total Spent</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Orders</th>
-                <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center">
-                    Loading...
-                  </td>
-                </tr>
-              ) : customers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center">
-                    No customers yet. Add your first customer!
-                  </td>
-                </tr>
-              ) : (
-                customers.map((customer) => (
-                  <tr
-                    key={customer.id}
-                    className="border-b border-stroke dark:border-strokedark"
-                  >
-                    <td className="px-4 py-3 text-sm">{customer.name}</td>
-                    <td className="px-4 py-3 text-sm">{customer.email || "-"}</td>
-                    <td className="px-4 py-3 text-sm">{customer.phone || "-"}</td>
-                    <td className="px-4 py-3 text-sm">${customer.totalSpent.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-sm">{customer.totalOrders}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleEdit(customer)}
-                          className="text-blue-600 hover:underline"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(customer.id)}
-                          className="text-red-600 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
+        {loading ? (
+          <div className="p-8 text-center">Loading...</div>
+        ) : filtered.length === 0 ? (
+          <div className="p-8 text-center text-body dark:text-bodydark">
+            {customers.length === 0
+              ? "No customers yet. Add your first customer!"
+              : "No customers match your search."}
+          </div>
+        ) : (
+          <>
+            <div className="hidden md:block">
+              <table className="w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                    <th className="px-4 py-3 text-sm font-medium">Name</th>
+                    <th className="px-4 py-3 text-sm font-medium">Phone</th>
+                    <th className="px-4 py-3 text-sm font-medium">Total Spent</th>
+                    <th className="px-4 py-3 text-sm font-medium">Orders</th>
+                    <th className="px-4 py-3 text-sm font-medium">Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {filtered.map((customer) => (
+                    <tr
+                      key={customer.id}
+                      className="border-b border-stroke dark:border-strokedark"
+                    >
+                      <td className="px-4 py-3 text-sm">
+                        <div>{customer.name}</div>
+                        {customer.email && (
+                          <div className="text-xs text-body">{customer.email}</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        {customer.phone || <span className="text-bodydark2">-</span>}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {formatNaira(customer.totalSpent)}
+                      </td>
+                      <td className="px-4 py-3 text-sm">{customer.totalOrders}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(customer)}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(customer.id)}
+                            className="text-red-600 hover:underline"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="divide-y divide-stroke md:hidden dark:divide-strokedark">
+              {filtered.map((customer) => (
+                <div key={customer.id} className="space-y-1.5 p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-medium">{customer.name}</div>
+                      {customer.email && (
+                        <div className="text-xs text-body">{customer.email}</div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">{formatNaira(customer.totalSpent)}</div>
+                      <div className="text-xs text-body">{customer.totalOrders} orders</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{customer.phone || <span className="text-bodydark2">No phone</span>}</span>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => handleEdit(customer)}
+                        className="text-blue-600 hover:underline"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(customer.id)}
+                        className="text-red-600 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
           <div className="w-full max-w-md rounded-lg bg-white p-6 dark:bg-boxdark">
-            <h3 className="mb-4 text-lg font-semibold">
+            <h3 className="mb-4 text-lg font-semibold text-black dark:text-white">
               {editingCustomer ? "Edit Customer" : "Add New Customer"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm font-medium">Name *</label>
+                <label className="mb-1 block text-sm font-medium text-black dark:text-white">Name *</label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full rounded border border-stroke bg-gray px-3 py-2 dark:border-strokedark dark:bg-meta-4"
                   required
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Email</label>
+                <label className="mb-1 block text-sm font-medium text-black dark:text-white">Email</label>
                 <input
                   type="email"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="w-full rounded border border-stroke bg-gray px-3 py-2 dark:border-strokedark dark:bg-meta-4"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Phone</label>
+                <label className="mb-1 block text-sm font-medium text-black dark:text-white">Phone</label>
                 <input
                   type="text"
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="w-full rounded border border-stroke bg-gray px-3 py-2 dark:border-strokedark dark:bg-meta-4"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Address</label>
+                <label className="mb-1 block text-sm font-medium text-black dark:text-white">Address</label>
                 <input
                   type="text"
                   value={formData.address}
-                  onChange={(e) =>
-                    setFormData({ ...formData, address: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="w-full rounded border border-stroke bg-gray px-3 py-2 dark:border-strokedark dark:bg-meta-4"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium">Notes</label>
+                <label className="mb-1 block text-sm font-medium text-black dark:text-white">Notes</label>
                 <textarea
                   value={formData.notes}
-                  onChange={(e) =>
-                    setFormData({ ...formData, notes: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={3}
                   className="w-full rounded border border-stroke bg-gray px-3 py-2 dark:border-strokedark dark:bg-meta-4"
                 />
@@ -259,14 +311,14 @@ export default function CustomersPage() {
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="rounded border border-stroke px-4 py-2 hover:bg-gray dark:border-strokedark"
+                  onClick={() => { setShowModal(false); setEditingCustomer(null); }}
+                  className="rounded border border-stroke px-4 py-2 text-sm hover:bg-gray dark:border-strokedark"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded bg-primary px-4 py-2 text-white hover:bg-opacity-90"
+                  className="rounded bg-primary px-4 py-2 text-sm text-white hover:bg-opacity-90"
                 >
                   {editingCustomer ? "Update" : "Create"}
                 </button>

@@ -1,0 +1,18 @@
+{
+  "name": "Revenue Desk",
+  "short_name": "RevDesk",
+  "description": "Business management for local companies in Lagos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A222C",
+  "theme_color": "#3C50E0",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/images/logo/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
